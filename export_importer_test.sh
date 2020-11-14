@@ -18,21 +18,21 @@ AL_INDEX_FILE=https://covidexposurestorage.z13.web.core.windows.net/nationalInde
 AL_EXPORT_ROOT=https://covidexposurestorage.z13.web.core.windows.net
 
 ########### Setting the vars
-STATE_INDEX_FILE=$VA_INDEX_FILE
-STATE_EXPORT_ROOT=$VA_EXPORT_ROOT
+STATE_INDEX_FILE=$AL_INDEX_FILE
+STATE_EXPORT_ROOT=$AL_EXPORT_ROOT
 NKS_API=$V1_INTEGRATION_API
 ###########
 
 # Run this script from inside export-analyzer, make sure WORKING_DIR is created and empty
 # Put the one you want on the bottom :)
 WORKING_DIR=AZ_export_analyzer
-WORKING_DIR=AL_export_analyzer
 WORKING_DIR=VA_export_analyzer
+WORKING_DIR=AL_export_analyzer
 
 # Probably some go-ish way to check this, but whatever
 [ $(basename $PWD) != "export-analyzer" ] && echo Error: need to be inside export-analyzer tool && exit 1
 [ ! -d $WORKING_DIR ] && echo Error: $WORKING_DIR not found... && exit 1
-[ "$(ls -A $WORKING_DIR)" ] && echo Error: $WORKING_DIR not empty... && exit 1
+#[ "$(ls -A $WORKING_DIR)" ] && echo Error: $WORKING_DIR not empty... && exit 1
 
 function prep_env(){
 	mkdir -v state_zips nks_zips state_json nks_json
@@ -90,14 +90,14 @@ function extract_keys(){
 	echo "Extracting nks keys..."
 	grep \"key_data\": nks_json/* | cut -d'"' -f4 > nks_keys
 	sort -o nks_keys nks_keys
-	echo Total number of state keys: $(wc -l state_keys)
+	echo -e "Total number of state keys: ${BLD}${YEL}$(wc -l < state_keys)${NC}"
 }
 
 function key_search(){
 	comm -12 state_keys nks_keys > matching_keys
 	comm -23 state_keys nks_keys > missing_keys
-	echo "Total matching keys: $(wc -l matching_keys)"
-	echo "Total missing keys: $(wc -l missing_keys)"
+	echo -e "Total matching keys: ${BLD}${GRN}$(wc -l < matching_keys)${NC}"
+	echo -e "Total missing keys: ${BLD}${RED}$(wc -l < missing_keys)${NC}"
 }
 
 function main(){
@@ -111,12 +111,15 @@ function main(){
 	analyze_state_exports
 	echo " ### Running func analyze_nks_exports ### "
 	analyze_nks_exports
-	echo " ### Running func extract_keys ### "
+	#echo " ### Running func extract_keys ### "
+	echo -e "\n${BLD}Extracting and analyzing keys...${NC}"
 	extract_keys
-	echo " ### Running func key_search ### "
+	#echo " ### Running func key_search ### "
+	echo -e "\n${BLD}Comparing state keys with NKS keys...${NC}"
 	key_search
 }
 
+RED='\033[0;31m';YEL='\033[0;33m';GRN='\033[0;32m';BLU='\033[0;96m';BLD='\033[0;1m';NC='\033[0;0;39m'
 echo "Switching to $WORKING_DIR..."
 pushd $WORKING_DIR > /dev/null 2>&1
 main
