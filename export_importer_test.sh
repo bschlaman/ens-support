@@ -18,21 +18,21 @@ AL_INDEX_FILE=https://covidexposurestorage.z13.web.core.windows.net/nationalInde
 AL_EXPORT_ROOT=https://covidexposurestorage.z13.web.core.windows.net
 
 ########### Setting the vars
-STATE_INDEX_FILE=$AL_INDEX_FILE
-STATE_EXPORT_ROOT=$AL_EXPORT_ROOT
+STATE_INDEX_FILE=$AZ_INDEX_FILE
+STATE_EXPORT_ROOT=$AZ_EXPORT_ROOT
 NKS_API=$V1_INTEGRATION_API
 ###########
 
 # Run this script from inside export-analyzer, make sure WORKING_DIR is created and empty
 # Put the one you want on the bottom :)
-WORKING_DIR=AZ_export_analyzer
 WORKING_DIR=VA_export_analyzer
 WORKING_DIR=AL_export_analyzer
+WORKING_DIR=AZ_export_analyzer
 
 # Probably some go-ish way to check this, but whatever
 [ $(basename $PWD) != "export-analyzer" ] && echo Error: need to be inside export-analyzer tool && exit 1
 [ ! -d $WORKING_DIR ] && echo Error: $WORKING_DIR not found... && exit 1
-#[ "$(ls -A $WORKING_DIR)" ] && echo Error: $WORKING_DIR not empty... && exit 1
+[ "$(ls -A $WORKING_DIR)" ] && echo Error: $WORKING_DIR not empty... && exit 1
 
 function prep_env(){
 	mkdir -v state_zips nks_zips state_json nks_json
@@ -47,10 +47,10 @@ function dl_state_exports(){
 	echo Getting STATE exports...
 	EXPORTS=$(curl -s $STATE_INDEX_FILE | sed 's/\r$//')
 	pushd state_zips > /dev/null 2>&1
-  for ex in $EXPORTS ; do
+	for ex in $EXPORTS ; do
 		echo "##[STATE] Downloading: " $ex
-  	curl -sO $STATE_EXPORT_ROOT/$ex
-  done
+		curl -sO $STATE_EXPORT_ROOT/$ex
+	done
 	popd > /dev/null 2>&1
 }
 
@@ -58,28 +58,28 @@ function dl_nks_exports(){
 	echo Getting NKS exports...
 	EXPORTS=$(curl -s $NKS_API/index.txt | sed 's/^.*\///')
 	pushd nks_zips > /dev/null 2>&1
-  for ex in $EXPORTS ; do
+	for ex in $EXPORTS ; do
 		echo "##[NKS] Downloading: " $ex
-  	curl -sO $NKS_API/$ex
-  done
+		curl -sO $NKS_API/$ex
+	done
 	popd > /dev/null 2>&1
 }
 
 function analyze_state_exports(){
 	pushd state_json > /dev/null 2>&1
-  for zip in ../state_zips/* ; do
-  	echo "[STATE] Analyzing: $(basename $zip)"
-  	go run github.com/google/exposure-notifications-server/tools/export-analyzer --file=$zip > $(basename $zip).json 2>&1
-  done
+	for zip in ../state_zips/* ; do
+		echo "[STATE] Analyzing: $(basename $zip)"
+		go run github.com/google/exposure-notifications-server/tools/export-analyzer --file=$zip > $(basename $zip).json 2>&1
+	done
 	popd > /dev/null 2>&1
 }
 
 function analyze_nks_exports(){
 	pushd nks_json > /dev/null 2>&1
-  for zip in ../nks_zips/* ; do
-  	echo "[NKS] Analyzing: $(basename $zip)"
-  	go run github.com/google/exposure-notifications-server/tools/export-analyzer --file=$zip > $(basename $zip).json 2>&1
-  done
+	for zip in ../nks_zips/* ; do
+		echo "[NKS] Analyzing: $(basename $zip)"
+		go run github.com/google/exposure-notifications-server/tools/export-analyzer --file=$zip > $(basename $zip).json 2>&1
+	done
 	popd > /dev/null 2>&1
 }
 
@@ -111,10 +111,10 @@ function main(){
 	analyze_state_exports
 	echo " ### Running func analyze_nks_exports ### "
 	analyze_nks_exports
-	#echo " ### Running func extract_keys ### "
+	echo " ### Running func extract_keys ### "
 	echo -e "\n${BLD}Extracting and analyzing keys...${NC}"
 	extract_keys
-	#echo " ### Running func key_search ### "
+	echo " ### Running func key_search ### "
 	echo -e "\n${BLD}Comparing state keys with NKS keys...${NC}"
 	key_search
 }
