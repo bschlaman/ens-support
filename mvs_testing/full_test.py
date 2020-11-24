@@ -3,11 +3,37 @@ import base64
 import json
 import requests
 import os
+import hmac
 
-admin_key = "VkVkjO9lBCenNGAz7CtkvEkFb6AfUkPZWXYE9Dx6IciJf2DKEirmny4HkS_8ycprkB_T3JcOtPvy-5FwkpusSg.14.fsaFDcg9PqjkrO1kHyIRAmNFzGUfuWo1dg8StS1gR6Brlu7CxWUcDKP9NtYL3fhPRdQ7yRB9KCqbImzSbxGJ_w"
-device_key = "YCkfoo6DIMCQS4lcFd3dAaXSfiqQ-MiT1uIvMn7r-KQ4FEWms9-IbqfnQUDwDh6LN6ehbsApGKfUEK31vLE3bQ.14.eoK9Qm1P_5zt7LwuLtzm6vrBeQ-yuRk7ZrmTx5qP8-_037XIHqgH1GWP-2GCcg0HVl3aSnshXyu0B-o0DweGTw"
-admin_base_url = "https://adminapi.encv-test.org"
-base_url = "https://apiserver.encv-test.org"
+env = "staging"
+admin_base_url = ""
+base_url = ""
+admin_key = ""
+device_key = ""
+
+with open("api.json") as f:
+    data = json.load(f)
+    admin_base_url = data[env]["admin_base_url"]
+    base_url = data[env]["base_url"]
+    admin_key = data[env]["admin_key"]
+    device_key = data[env]["device_key"]
+
+#print(admin_base_url,base_url,admin_key,device_key)
+#exit(0)
+
+key1 = {
+    "key": "xxxx9hdz2SlxZ8GEgqTYpA==",
+    "rollingStartNumber": 2674944,
+    "rollingPeriod": 144,
+    "transmissionRisk": 3
+}
+key2 = {
+    "key": "yyyyhLzfG4uzXneNimkPRQ==",
+    "rollingStartNumber": 2674944,
+    "rollingPeriod": 144,
+    "transmissionRisk": 5
+}
+
 endpoints = {
     "issue": "/api/issue",
     "verify": "/api/verify",
@@ -23,8 +49,8 @@ def issue_code():
     url = admin_base_url + endpoints["issue"]
     headers["x-api-key"] = admin_key
     payload = {
-        "symptomDate": "2020-11-01",
-        "testDate": "2020-11-01",
+        "symptomDate": "2020-11-11",
+        "testDate": "2020-11-11",
         "testType": "confirmed",
         "tzOffset": 0,
         "padding": "asdfasdf"
@@ -75,10 +101,14 @@ def gen_keys(n):
         keys.append(tek)
     for n,x in enumerate(keys):
         print("key {}:\n{}".format(n, json.dumps(keys[n])))
-    exit(0)
+
+def gen_hmac():
+    out = hmac.digest
 
 def main():
-    gen_keys(random.randint(2,9))
+    #gen_keys(random.randint(2,9))
+    #gen_hmac()
+    #exit(0)
     code = issue_code()
     token = verify_code(code)
     certificate = get_certificate(token)

@@ -1,33 +1,22 @@
 #!/bin/bash
 set -u
 
-# NKS
-V1_INTEGRATION_API=https://encdn.integration.exposurenotification.health/v1h1
-#V1_PROD_API=https://encdn.prod.exposurenotification.health/
-#V1_DEV_API=https://encdn.dev.exposurenotification.health/
-
-# STATES
-#VA_PROD_API=https://storage.googleapis.com/prod-export-key/exposureKeyExport-US/index.txt
-AZ_INDEX_FILE=https://exposure.wehealth.org/US-AZ/index.txt
-AZ_EXPORT_ROOT=https://exposure.wehealth.org
-VA_UAT_INDEX_FILE=https://storage.googleapis.com/exposure-keys-uat-sync/exposureKeyExport-US/index.txt
-VA_UAT_EXPORT_ROOT=https://storage.googleapis.com/exposure-keys-uat-sync
-VA_INDEX_FILE=https://storage.googleapis.com/prod-export-key/exposureKeyExport-US/index.txt
-VA_EXPORT_ROOT=https://storage.googleapis.com/prod-export-key
-AL_INDEX_FILE=https://covidexposurestorage.z13.web.core.windows.net/nationalIndex.txt
-AL_EXPORT_ROOT=https://covidexposurestorage.z13.web.core.windows.net
+PROP_FILE=urls.properties
+NKS=V1_INTEGRATION_API
+INDEX=AL_INDEX_FILE
+ROOT=AL_EXPORT_ROOT
 
 ########### Setting the vars
-STATE_INDEX_FILE=$AZ_INDEX_FILE
-STATE_EXPORT_ROOT=$AZ_EXPORT_ROOT
-NKS_API=$V1_INTEGRATION_API
+STATE_INDEX_FILE=$(grep $INDEX $PROP_FILE | cut -d= -f2)
+STATE_EXPORT_ROOT=$(grep $INDEX $PROP_FILE | cut -d= -f2)
+NKS_API=$(grep $NKS $PROP_FILE | cut -d= -f2)
 ###########
 
 # Run this script from inside export-analyzer, make sure WORKING_DIR is created and empty
 # Put the one you want on the bottom :)
+WORKING_DIR=AZ_export_analyzer
 WORKING_DIR=VA_export_analyzer
 WORKING_DIR=AL_export_analyzer
-WORKING_DIR=AZ_export_analyzer
 
 # Probably some go-ish way to check this, but whatever
 [ $(basename $PWD) != "export-analyzer" ] && echo Error: need to be inside export-analyzer tool && exit 1
