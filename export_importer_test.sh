@@ -2,21 +2,21 @@
 set -u
 
 PROP_FILE=urls.properties
-NKS=V1_INTEGRATION_API
-INDEX=AL_INDEX_FILE
-ROOT=AL_EXPORT_ROOT
+NKS=V1_PROD_API
+INDEX=VA_INDEX_FILE
+ROOT=VA_EXPORT_ROOT
 
 ########### Setting the vars
-STATE_INDEX_FILE=$(grep $INDEX $PROP_FILE | cut -d= -f2)
-STATE_EXPORT_ROOT=$(grep $INDEX $PROP_FILE | cut -d= -f2)
+STATE_INDEX_FILE=$(grep $INDEX $PROP_FILE | grep -v \# | cut -d= -f2)
+STATE_EXPORT_ROOT=$(grep $ROOT $PROP_FILE | cut -d= -f2)
 NKS_API=$(grep $NKS $PROP_FILE | cut -d= -f2)
 ###########
 
 # Run this script from inside export-analyzer, make sure WORKING_DIR is created and empty
 # Put the one you want on the bottom :)
 WORKING_DIR=AZ_export_analyzer
-WORKING_DIR=VA_export_analyzer
 WORKING_DIR=AL_export_analyzer
+WORKING_DIR=VA_export_analyzer
 
 # Probably some go-ish way to check this, but whatever
 [ $(basename $PWD) != "export-analyzer" ] && echo Error: need to be inside export-analyzer tool && exit 1
@@ -56,19 +56,15 @@ function dl_nks_exports(){
 
 function analyze_state_exports(){
 	pushd state_json > /dev/null 2>&1
-	for zip in ../state_zips/* ; do
-		echo "[STATE] Analyzing: $(basename $zip)"
-		go run github.com/google/exposure-notifications-server/tools/export-analyzer --file=$zip > $(basename $zip).json 2>&1
-	done
+	echo "[STATE] Analyzing all state exports..."
+	go run github.com/google/exposure-notifications-server/tools/export-analyzer -tek-age=672h0m0s --file=../state_zips/* > state_output.json 2>&1
 	popd > /dev/null 2>&1
 }
 
 function analyze_nks_exports(){
 	pushd nks_json > /dev/null 2>&1
-	for zip in ../nks_zips/* ; do
-		echo "[NKS] Analyzing: $(basename $zip)"
-		go run github.com/google/exposure-notifications-server/tools/export-analyzer --file=$zip > $(basename $zip).json 2>&1
-	done
+	echo "[NKS] Analyzing all NKS exports..."
+	go run github.com/google/exposure-notifications-server/tools/export-analyzer -tek-age=672h0m0s --file=../nks_zips/* > nks_output.json 2>&1
 	popd > /dev/null 2>&1
 }
 
@@ -90,6 +86,7 @@ function key_search(){
 }
 
 function main(){
+	echo -e "${BLD}${YEL}NOTE: YOU MUST RUN THIS SCRIPT USING export-analyzer v0.17.0 OR HIGHER!${NC}"
 	echo " ### Running func prep_env ### "
 	prep_env
 	echo " ### Running func dl_state_exports ### "
