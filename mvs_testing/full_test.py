@@ -1,3 +1,4 @@
+import hashlib
 import random
 import base64
 import json
@@ -18,7 +19,6 @@ with open("api.json") as f:
     admin_key = data[env]["admin_key"]
     device_key = data[env]["device_key"]
 
-#print(admin_base_url,base_url,admin_key,device_key)
 #exit(0)
 
 key1 = {
@@ -102,16 +102,32 @@ def gen_keys(n):
     for n,x in enumerate(keys):
         print("key {}:\n{}".format(n, json.dumps(keys[n])))
 
-def gen_hmac():
-    out = hmac.digest
+def gen_hmac(message):
+    secret = bytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
+    print("HMAC secret in base64:")
+    print(base64.b64encode(secret))
+    h = hmac.new(secret, message.encode("utf-8"), hashlib.sha256)
+    print("HMAC calculation:")
+    b = base64.b64encode(h.digest())
+    print(b)
+    exit(0)
 
 def main():
-    #gen_keys(random.randint(2,9))
-    #gen_hmac()
+    gen_keys(2)
+    gen_hmac("xxxx9hdz2SlxZ8GEgqTYpA==.2674944.144.3,yyyyhLzfG4uzXneNimkPRQ==.2674944.144.5")
     #exit(0)
-    code = issue_code()
-    token = verify_code(code)
-    certificate = get_certificate(token)
+    #code = issue_code()
+    #token = verify_code(code)
+    #certificate = get_certificate(token)
+    menu = {"1":("issue",issue_code),
+            "2":("verify",verify_code),
+            "3":("certificate",get_certificate)
+       }
+    for key in sorted(menu.keys()):
+         print(key+":" + menu[key][0])
+
+    ans = input("Make A Choice")
+    menu.get(ans,[None,exit(1)])[1]()
     
 if __name__ == "__main__":
     main()
