@@ -5,6 +5,16 @@ import json
 import requests
 import os
 import hmac
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    GRN = '\033[92m'
+    YEL = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 env = "staging"
 admin_base_url = ""
@@ -71,21 +81,19 @@ def verify_code(code):
     }
     res = requests.post(url, headers=headers, data=json.dumps(payload))
     res_dict = json.loads(res.content.decode("utf-8"))
-    print("Token: {}".format(res_dict["token"]))
     return res_dict["token"]
     #print(json.dumps(res_dict, indent=4))
 
-def get_certificate(token):
+def get_certificate(token, ekeyhmac):
     url = base_url + endpoints["certificate"]
     headers["x-api-key"] = device_key
     payload = {
         "token": token,
-        "ekeyhmac": "wfhgTIVov7y91plU8dThbvJi/dWoiY3kqJN4QCsR5Tg=",
+        "ekeyhmac": ekeyhmac,
         "padding": "Zm9vCg=="
     }
     res = requests.post(url, headers=headers, data=json.dumps(payload))
     res_dict = json.loads(res.content.decode("utf-8"))
-    print("Certificate: {}".format(res_dict["certificate"]))
     return res_dict["certificate"]
     #print(json.dumps(res_dict, indent=4))
 
@@ -94,40 +102,70 @@ def gen_keys(n):
     for x in range(n):
         tek = {
             "key": base64.b64encode(os.urandom(16)).decode("utf-8"),
-            "rollingStartNumber": 2674944,
+            "rollingStartNumber": 2678110,
             "rollingPeriod": 144,
             "transmissionRisk": random.randint(1,5)
         }
         keys.append(tek)
     for n,x in enumerate(keys):
-        print("key {}:\n{}".format(n, json.dumps(keys[n])))
+        print(bcolors.OKCYAN + "key {}:".format(n) + bcolors.ENDC + "\n{}".format(json.dumps(keys[n], indent=2)))
+    return keys
 
-def gen_hmac(message):
-    secret = bytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
-    print("HMAC secret in base64:")
-    print(base64.b64encode(secret))
+def mutate_keys(keys):
+    keys = sorted(keys, key = lambda i: i["key"])
+    keys_str = ""
+    for key in keys:
+        keys_str += "{}.{}.{},".format(key["key"], key["rollingStartNumber"], key["rollingPeriod"], key["transmissionRisk"])
+    return keys_str[:-1]
+
+def gen_hmac(secret, message):
     h = hmac.new(secret, message.encode("utf-8"), hashlib.sha256)
-    print("HMAC calculation:")
     b = base64.b64encode(h.digest())
-    print(b)
-    exit(0)
+    return str(b, "utf-8")
 
 def main():
-    gen_keys(2)
-    gen_hmac("xxxx9hdz2SlxZ8GEgqTYpA==.2674944.144.3,yyyyhLzfG4uzXneNimkPRQ==.2674944.144.5")
-    #exit(0)
-    #code = issue_code()
-    #token = verify_code(code)
-    #certificate = get_certificate(token)
-    menu = {"1":("issue",issue_code),
-            "2":("verify",verify_code),
-            "3":("certificate",get_certificate)
-       }
-    for key in sorted(menu.keys()):
-         print(key+":" + menu[key][0])
+    print(bcolors.HEADER + " === TEK Verification and Publish Tool === " + bcolors.ENDC)
 
-    ans = input("Make A Choice")
-    menu.get(ans,[None,exit(1)])[1]()
+    input("\n >>> Press ENTER to generate keys.")
+    print("Generating keys...")
+    keys = gen_keys(3)
+
+    input("\n >>> Press ENTER to issue a code.")
+    print("Issuing code...")
+    code = issue_code()
+    print("code: " + bcolors.YEL + code + bcolors.ENDC)
+    print("This code will expire in 15 min.")
+
+    input("\n >>> Press ENTER to verify the code")
+    print("Exchanging the code for a long-term token...")
+    token = verify_code(code)
+    print("long-term token: " + bcolors.YEL + token[0:19] + "..." + bcolors.ENDC)
+
+    input("\n >>> Press ENTER to calculate the HMAC of your keys")
+    secret = bytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
+    print("Converting keys into a string...")
+    message = mutate_keys(keys)
+    print("key string: " + bcolors.YEL + message + bcolors.ENDC)
+    print("Generating HMAC of keys...")
+    print("Using secret: " + bcolors.GRN + str(base64.b64encode(secret), "utf-8") + bcolors.ENDC)
+    ekeyhmac = gen_hmac(secret, message)
+    print("hmac: " + bcolors.OKCYAN + ekeyhmac + bcolors.ENDC)
+
+    input("\n >>> Press ENTER to get verification certificate.")
+    certificate = get_certificate(token, ekeyhmac)
+    print("certificate: " + bcolors.YEL + certificate[0:19] + "..." + bcolors.ENDC)
+
+    input("\n >>> Press ENTER to publish keys.")
+    
+    # menu = {"1":("issue",issue_code),
+    #         "2":("verify",verify_code),
+    #         "3":("certificate",get_certificate)
+    #    }
+    # for key in sorted(menu.keys()):
+    #      print(key+":" + menu[key][0])
+
+    # ans = input("Make A Choice")
+    # menu.get(ans,[None,exit(1)])[1]()
     
 if __name__ == "__main__":
     main()
