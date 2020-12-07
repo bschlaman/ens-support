@@ -47,8 +47,8 @@ def issue_code():
     url = admin_base_url + endpoints["issue"]
     headers["x-api-key"] = admin_key
     payload = {
-        "symptomDate": "2020-11-11",
-        "testDate": "2020-11-11",
+        "symptomDate": "2020-12-01",
+        "testDate": "2020-12-01",
         "testType": "confirmed",
         "tzOffset": 0,
         "padding": "asdfasdf"
@@ -86,6 +86,7 @@ def get_certificate(token, ekeyhmac):
     #print(json.dumps(res_dict, indent=4))
 
 def publish_keys(keys, certificate, secret):
+    headers["x-api-key"] = None
     url = key_server
     payload = {
         "temporaryExposureKeys": keys,
@@ -103,7 +104,7 @@ def gen_keys(n):
     for x in range(n):
         tek = {
             "key": base64.b64encode(os.urandom(16)).decode("utf-8"),
-            "rollingStartNumber": 2678110,
+            "rollingStartNumber": 2678110 - x*144,
             "rollingPeriod": 144,
             "transmissionRisk": random.randint(1,5)
         }
@@ -116,7 +117,7 @@ def mutate_keys(keys):
     keys = sorted(keys, key = lambda i: i["key"])
     keys_str = ""
     for key in keys:
-        keys_str += "{}.{}.{},".format(key["key"], key["rollingStartNumber"], key["rollingPeriod"], key["transmissionRisk"])
+        keys_str += "{}.{}.{}.{},".format(key["key"], key["rollingStartNumber"], key["rollingPeriod"], key["transmissionRisk"])
     return keys_str[:-1]
 
 def gen_hmac(secret, message):
@@ -129,7 +130,7 @@ def main():
 
     input("\n >>> Press ENTER to generate keys.")
     print("Generating keys...")
-    keys = gen_keys(3)
+    keys = gen_keys(40)
 
     input("\n >>> Press ENTER to issue a code.")
     print("Issuing code...")
@@ -158,7 +159,7 @@ def main():
     print("certificate: " + bcolors.YEL + certificate[0:19] + "..." + bcolors.ENDC)
 
     input("\n >>> Press ENTER to publish keys.")
-    print(certificate)
+    #print(certificate)
     publish_keys(keys, certificate, secret_str)
     # menu = {"1":("issue",issue_code),
     #         "2":("verify",verify_code),
