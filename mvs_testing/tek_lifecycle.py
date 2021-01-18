@@ -6,6 +6,7 @@ import requests
 import os
 import hmac
 from time import time
+import datetime
 
 class acol:
     HDR = '\033[95m'
@@ -18,7 +19,7 @@ class acol:
     BLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-env = "prod"
+env = "staging"
 admin_base_url = ""
 base_url = ""
 admin_key = ""
@@ -46,19 +47,18 @@ headers = {
     "x-api-key": device_key
 }
 
-def issue_code():
+def issue_code(symptom_test_date):
     url = admin_base_url + endpoints["issue"]
     headers["x-api-key"] = admin_key
     payload = {
-        "symptomDate": "2020-12-21",
-        "testDate": "2020-12-21",
+        "symptomDate": symptom_test_date,
+        "testDate": symptom_test_date,
         "testType": "confirmed",
         "tzOffset": 0,
         "padding": "asdfasdf"
     }
     res = requests.post(url, headers=headers, data=json.dumps(payload))
     res_dict = json.loads(res.content.decode("utf-8"))
-    print("Issued code: {}".format(res_dict["code"]))
     return res_dict["code"]
     #print(json.dumps(res_dict, indent=4))
 
@@ -145,7 +145,8 @@ def main():
 
     input("\n >>> Press "+acol.BLD+"ENTER"+acol.END+" to "+acol.BLD+"issue a code"+acol.END+".")
     print("Issuing code...")
-    code = issue_code()
+    code = issue_code(datetime.datetime.now().strftime("%Y-%m-%d"))
+
     print("code: " + acol.YEL + code + acol.END)
     print("This code will expire in 15 min.")
 
