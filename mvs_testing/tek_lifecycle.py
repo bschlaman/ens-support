@@ -19,7 +19,7 @@ class acol:
     BLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-env = "staging"
+envs = ["staging", "test", "prod"]
 admin_base_url = ""
 base_url = ""
 admin_key = ""
@@ -27,17 +27,9 @@ device_key = ""
 health_authority_id = ""
 key_server = ""
 
-with open("api.json") as f:
-    data = json.load(f)
-    admin_base_url = data[env]["admin_base_url"]
-    base_url = data[env]["base_url"]
-    admin_key = data[env]["admin_key"]
-    device_key = data[env]["device_key"]
-    health_authority_id = data[env]["health_authority_id"]
-    key_server = data[env]["key_server"]
-
 endpoints = {
     "issue": "/api/issue",
+    "batch_issue": "/api/batch-issue",
     "verify": "/api/verify",
     "certificate": "/api/certificate"
 }
@@ -47,6 +39,22 @@ headers = {
     "x-api-key": device_key
 }
 
+def get_env_details(env):
+    global admin_base_url
+    global base_url
+    global admin_key
+    global device_key
+    global health_authority_id
+    global key_server
+    with open("api.json") as f:
+        data = json.load(f)
+        admin_base_url = data[env]["admin_base_url"]
+        base_url = data[env]["base_url"]
+        admin_key = data[env]["admin_key"]
+        device_key = data[env]["device_key"]
+        health_authority_id = data[env]["health_authority_id"]
+        key_server = data[env]["key_server"]
+
 def issue_code(symptom_test_date):
     url = admin_base_url + endpoints["issue"]
     headers["x-api-key"] = admin_key
@@ -55,11 +63,32 @@ def issue_code(symptom_test_date):
         "testDate": symptom_test_date,
         "testType": "confirmed",
         "tzOffset": 0,
-        "padding": "asdfasdf"
+        "padding": "foo"
     }
     res = requests.post(url, headers=headers, data=json.dumps(payload))
     res_dict = json.loads(res.content.decode("utf-8"))
     return res_dict["code"]
+    #print(json.dumps(res_dict, indent=4))
+
+def bulk_issue_code(num_codes, symptom_test_date):
+    url = admin_base_url + endpoints["batch_issue"]
+    headers["x-api-key"] = admin_key
+    payload = {
+        "codes": [],
+        "padding": "foo"
+    }
+    code_payload = {
+        "symptomDate": symptom_test_date,
+        "testDate": symptom_test_date,
+        "testType": "confirmed",
+        "tzOffset": 0,
+        "padding": "foo"
+    }
+    for x in range(num_codes):
+        payload["codes"].append(code_payload)
+    res = requests.post(url, headers=headers, data=json.dumps(payload))
+    res_dict = json.loads(res.content.decode("utf-8"))
+    return res_dict["codes"]
     #print(json.dumps(res_dict, indent=4))
 
 def verify_code(code):
@@ -68,7 +97,7 @@ def verify_code(code):
     payload = {
         "code": code,
         "accept": ["confirmed"],
-        "padding": "asdfasdf"
+        "padding": "foo"
     }
     res = requests.post(url, headers=headers, data=json.dumps(payload))
     res_dict = json.loads(res.content.decode("utf-8"))
@@ -101,9 +130,8 @@ def publish_keys(keys, certificate, secret):
     res = requests.post(url, headers=headers, data=json.dumps(payload))
     res_dict = json.loads(res.content.decode("utf-8"))
     print("=====")
-    print(json.dumps(payload, indent=4))
-    print("=====")
-    print(json.dumps(res_dict, indent=4))
+    print("Using healthAuthorityID: " + acol.YEL + payload["healthAuthorityID"] + acol.END)
+    print("insertedExposures: " + acol.GRN + str(res_dict["insertedExposures"]) + acol.END)
 
 def gen_keys(n):
     keys = []
@@ -134,8 +162,22 @@ def gen_hmac(secret, message):
     b = base64.b64encode(h.digest())
     return str(b, "utf-8")
 
+def select_env():
+    menu = {}
+    print("Select environment:")
+    for n,e in enumerate(envs):
+        menu[str(n)] = e
+    for key in sorted(menu.keys()):
+        print(" " + str(int(key)+1) + ": " + menu[key])
+    ans = str(int(input("\n > ")) - 1)
+    return menu[ans]
+
 def main():
     print(acol.HDR + " === TEK Verification and Publish Tool === " + acol.END)
+
+    env = select_env()
+    get_env_details(env)
+    print("Selected environment: "+acol.YEL+ env +acol.END+ "\n")
 
     input("\n >>> Press "+acol.BLD+"ENTER"+acol.END+" to "+acol.BLD+"generate keys"+acol.END+".")
     print("Generating keys...")
@@ -143,7 +185,14 @@ def main():
     keys = gen_keys(num_keys)
     print("Number of keys generated: {}".format(num_keys))
 
-    input("\n >>> Press "+acol.BLD+"ENTER"+acol.END+" to "+acol.BLD+"issue a code"+acol.END+".")
+    input("\n >>> Press "+acol.BLD+"ENTER"+acol.END+" to "+acol.BLD+"BULK issue a code"+acol.END+".")
+    print("BULK issuing code...")
+    num_codes = random.randint(3, 8)
+    codes = bulk_issue_code(num_codes, datetime.datetime.now().strftime("%Y-%m-%d"))
+    for code in codes:
+        print("batch code: " + acol.YEL + code["code"] + acol.END)
+
+    input("\n >>> Press "+acol.BLD+"ENTER"+acol.END+" to "+acol.BLD+"issue a SINGLE code"+acol.END+".")
     print("Issuing code...")
     code = issue_code(datetime.datetime.now().strftime("%Y-%m-%d"))
 
