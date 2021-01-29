@@ -19,6 +19,8 @@ class acol:
     BLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+DEBUG = False
+
 envs = ["staging", "test", "prod"]
 admin_base_url = ""
 base_url = ""
@@ -63,33 +65,35 @@ def issue_code(symptom_test_date):
         "testDate": symptom_test_date,
         "testType": "confirmed",
         "tzOffset": 0,
-        "padding": "foo"
+        "padding": base64.b64encode(os.urandom(16)).decode("utf-8")
     }
     res = requests.post(url, headers=headers, data=json.dumps(payload))
     res_dict = json.loads(res.content.decode("utf-8"))
+    if DEBUG:
+        print(json.dumps(res_dict, indent=4))
     return res_dict["code"]
-    #print(json.dumps(res_dict, indent=4))
 
 def bulk_issue_code(num_codes, symptom_test_date):
     url = admin_base_url + endpoints["batch_issue"]
     headers["x-api-key"] = admin_key
     payload = {
         "codes": [],
-        "padding": "foo"
+        "padding": base64.b64encode(os.urandom(16)).decode("utf-8")
     }
     code_payload = {
         "symptomDate": symptom_test_date,
         "testDate": symptom_test_date,
         "testType": "confirmed",
         "tzOffset": 0,
-        "padding": "foo"
+        "padding": base64.b64encode(os.urandom(16)).decode("utf-8")
     }
     for x in range(num_codes):
         payload["codes"].append(code_payload)
     res = requests.post(url, headers=headers, data=json.dumps(payload))
     res_dict = json.loads(res.content.decode("utf-8"))
+    if DEBUG:
+        print(json.dumps(res_dict, indent=4))
     return res_dict["codes"]
-    #print(json.dumps(res_dict, indent=4))
 
 def verify_code(code):
     url = base_url + endpoints["verify"]
@@ -97,12 +101,13 @@ def verify_code(code):
     payload = {
         "code": code,
         "accept": ["confirmed"],
-        "padding": "foo"
+        "padding": base64.b64encode(os.urandom(16)).decode("utf-8")
     }
     res = requests.post(url, headers=headers, data=json.dumps(payload))
     res_dict = json.loads(res.content.decode("utf-8"))
+    if DEBUG:
+        print(json.dumps(res_dict, indent=4))
     return res_dict["token"]
-    #print(json.dumps(res_dict, indent=4))
 
 def get_certificate(token, ekeyhmac):
     url = base_url + endpoints["certificate"]
@@ -110,12 +115,13 @@ def get_certificate(token, ekeyhmac):
     payload = {
         "token": token,
         "ekeyhmac": ekeyhmac,
-        "padding": "Zm9vCg=="
+        "padding": base64.b64encode(os.urandom(16)).decode("utf-8")
     }
     res = requests.post(url, headers=headers, data=json.dumps(payload))
     res_dict = json.loads(res.content.decode("utf-8"))
+    if DEBUG:
+        print(json.dumps(res_dict, indent=4))
     return res_dict["certificate"]
-    #print(json.dumps(res_dict, indent=4))
 
 def publish_keys(keys, certificate, secret):
     headers["x-api-key"] = None
@@ -125,10 +131,12 @@ def publish_keys(keys, certificate, secret):
 	    "healthAuthorityID": health_authority_id,
 	    "verificationPayload": certificate,
 	    "hmacKey": secret,
-	    "padding": "foo"
+	    "padding": base64.b64encode(os.urandom(16)).decode("utf-8")
     }
     res = requests.post(url, headers=headers, data=json.dumps(payload))
     res_dict = json.loads(res.content.decode("utf-8"))
+    if DEBUG:
+        print(json.dumps(res_dict, indent=4))
     print("=====")
     print("Using healthAuthorityID: " + acol.YEL + payload["healthAuthorityID"] + acol.END)
     print("insertedExposures: " + acol.GRN + str(res_dict["insertedExposures"]) + acol.END)
@@ -177,7 +185,9 @@ def main():
 
     env = select_env()
     get_env_details(env)
-    print("Selected environment: "+acol.YEL+ env +acol.END+ "\n")
+    print("---------------------------------")
+    print("Selected environment: "+acol.YEL+ env +acol.END)
+    print("---------------------------------")
 
     input("\n >>> Press "+acol.BLD+"ENTER"+acol.END+" to "+acol.BLD+"generate keys"+acol.END+".")
     print("Generating keys...")
@@ -185,7 +195,7 @@ def main():
     keys = gen_keys(num_keys)
     print("Number of keys generated: {}".format(num_keys))
 
-    input("\n >>> Press "+acol.BLD+"ENTER"+acol.END+" to "+acol.BLD+"BULK issue a code"+acol.END+".")
+    input("\n >>> Press "+acol.BLD+"ENTER"+acol.END+" to "+acol.BLD+"BULK issue codes"+acol.END+".")
     print("BULK issuing code...")
     num_codes = random.randint(3, 8)
     codes = bulk_issue_code(num_codes, datetime.datetime.now().strftime("%Y-%m-%d"))
