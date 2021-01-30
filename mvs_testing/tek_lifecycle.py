@@ -20,8 +20,9 @@ class acol:
     UNDERLINE = '\033[4m'
 
 DEBUG = False
+PUBLISH_DEBUG = False
 
-envs = ["staging", "test", "prod"]
+envs = ["staging", "test", "prod", "staging-e2e"]
 admin_base_url = ""
 base_url = ""
 admin_key = ""
@@ -135,7 +136,8 @@ def publish_keys(keys, certificate, secret):
     }
     res = requests.post(url, headers=headers, data=json.dumps(payload))
     res_dict = json.loads(res.content.decode("utf-8"))
-    if DEBUG:
+    if PUBLISH_DEBUG:
+        print("URL: " + acol.GRN + url + acol.END)
         print(json.dumps(res_dict, indent=4))
     print("=====")
     print("Using healthAuthorityID: " + acol.YEL + payload["healthAuthorityID"] + acol.END)
