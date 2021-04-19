@@ -157,7 +157,8 @@ def gen_keys(n):
         }
         keys.append(tek)
     for n,x in enumerate(keys):
-        print(acol.CYN + "key {}:".format(n) + acol.END + "\n{}".format(json.dumps(keys[n], indent=2)))
+        if n < 3:
+            print(acol.CYN + "key {}:".format(n) + acol.END + "\n{}".format(json.dumps(keys[n], indent=2)))
     return keys
 
 def mutate_keys(keys):
@@ -193,9 +194,9 @@ def main():
 
     input("\n >>> Press "+acol.BLD+"ENTER"+acol.END+" to "+acol.BLD+"generate keys"+acol.END+".")
     print("Generating keys...")
-    num_keys = random.randint(2, 5)
+    num_keys = random.randint(12, 15)
     keys = gen_keys(num_keys)
-    print("Number of keys generated: {}".format(num_keys))
+    print("Number of keys generated: "+acol.CYN+"{}".format(num_keys)+acol.END+" (showing first 3)")
 
     input("\n >>> Press "+acol.BLD+"ENTER"+acol.END+" to "+acol.BLD+"BULK issue codes"+acol.END+".")
     print("BULK issuing code...")
