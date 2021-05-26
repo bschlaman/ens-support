@@ -134,14 +134,14 @@ def publish_keys(keys, certificate, secret):
 	    "hmacKey": secret,
 	    "padding": base64.b64encode(os.urandom(16)).decode("utf-8"),
     }
+    print("Using healthAuthorityID: " + acol.YEL + payload["healthAuthorityID"] + acol.END)
     res = requests.post(url, headers=headers, data=json.dumps(payload))
     res_dict = json.loads(res.content.decode("utf-8"))
     if PUBLISH_DEBUG:
         print("URL: " + acol.GRN + url + acol.END)
         print(json.dumps(res_dict, indent=4))
-        print("Response code: " + acol.GRN + str(res.status_code) + acol.END)
+        print("Response code: " + acol.YEL + str(res.status_code) + acol.END)
     print("=====")
-    print("Using healthAuthorityID: " + acol.YEL + payload["healthAuthorityID"] + acol.END)
     try:
         print("insertedExposures: " + acol.GRN + str(res_dict["insertedExposures"]) + acol.END)
     except Exception as e:
